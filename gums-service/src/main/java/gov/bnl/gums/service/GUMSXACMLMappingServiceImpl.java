@@ -13,6 +13,7 @@ import org.apache.log4j.Logger;
 import gov.bnl.gums.AccountInfo;
 import gov.bnl.gums.admin.GUMSAPI;
 import gov.bnl.gums.admin.GUMSAPIImpl;
+import org.opensciencegrid.gums.unix.GroupToGid;
 
 import org.opensaml.saml2.core.Statement;
 import org.opensaml.saml2.core.impl.SubjectBuilder;
@@ -132,18 +133,38 @@ public class GUMSXACMLMappingServiceImpl implements XACMLMappingService {
 					}
 				}
 				log.debug("Has group " + hasGroup + ", supports account " + supportsAccount);
+				boolean isValid = true;
 				if (hasGroup && !supportsAccount)
 				{
-					decision.setDecision(DecisionType.DECISION.Indeterminate);
-					statusCode.setValue(ERROR);
-					log.warn("Credentials mapped on '" + hostDn + "' for '" + userDn + "' with fqan '" + userFqan + "' to '" + account + "'.  However, the client cannot understand our response; will return an indeterminate response.");
+					int gid = GroupToGid.map(account.getGroup());
+					if (gid == -1)
+					{
+						decision.setDecision(DecisionType.DECISION.Indeterminate);
+						statusCode.setValue(ERROR);
+						log.warn("Credentials mapped on '" + hostDn + "' for '" + userDn + "' with fqan '" + userFqan + "' to '" + account + "'.  However, the client cannot understand our response and we cannot convert the groupname to GID on the GUMS host; will return an indeterminate response.");
+						isValid = false;
+					}
+					else
+					{
+						attributeAssignmentGid = attributeAssignmentBuilder.buildObject();
+						attributeAssignmentGid.setAttributeId(XACMLConstants.ATTRIBUTE_POSIX_GID_ID);
+						attributeAssignmentGid.setDataType(XACMLConstants.STRING_DATATYPE);
+						attributeAssignmentGid.setValue((new Integer(gid)).toString());
+						log.debug("Group name " + account.getGroup() + " mapped to GID " + gid);
+						hasGroup = false;
+						hasGid = true;
+					}
 				}
-				else
+				if (isValid)
 				{
 					decision.setDecision(DecisionType.DECISION.Permit);
 					log.debug("Credentials mapped on '" + hostDn + "' for '" + userDn + "' with fqan '" + userFqan + "' to '" + account + "'");
 				}
 			}
+		} catch (Error e2) {
+			statusCode.setValue(ERROR);
+			log.debug("Unhandled JVM error.", e2);
+			throw e2;
 		} catch (Exception e1) {
 			statusCode.setValue(ERROR);
 			log.debug("Unhandled exception.", e1);
