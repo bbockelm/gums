@@ -12,12 +12,9 @@ import gov.bnl.gums.configuration.Configuration;
 import gov.bnl.gums.db.UserGroupDB;
 
 import java.net.URL;
-import java.util.*;
 
 import org.apache.log4j.Logger; 
 import org.apache.log4j.Level;
-
-import org.glite.voms.generated.*;
 
 /** A group of users residing on a VOMS vo database. This class is able to 
  * import a list of users from a VOMS server. It will store to a local
@@ -39,13 +36,6 @@ public class VOMSUserGroup extends UserGroup {
 	static private final String defaultMatchFQAN = "ignore";
 	static private String[] matchFQANTypes = {"exact","vorole","role","vogroup","vo","ignore"};
 	
-	/*static {
-       Logger.getLogger(org.glite.security.trustmanager.CRLFileTrustManager.class.getName()).setLevel(Level.ERROR);
-       Logger.getLogger("org.glite.security.trustmanager.axis.AXISSocketFactory").setLevel(Level.OFF);
-       Logger.getLogger("org.glite.security.util.DirectoryList").setLevel(Level.OFF);
-       VOMSValidator.setTrustStore(new BasicVOMSTrustStore("/etc/grid-security/certificates", 12*3600*1000));
-	}*/
-	
     static public String getTypeStatic() {
 		return "voms";
 	}
@@ -58,12 +48,10 @@ public class VOMSUserGroup extends UserGroup {
 	}
 
     private Logger log = Logger.getLogger(VOMSUserGroup.class);
-    private String vomsServer = "";
     private String voGroup = "";
     private String role = "";
     private String fqan = null;
     private String matchFQAN = defaultMatchFQAN;
-    private String remainderUrl = "";
 
 	private boolean acceptProxyWithoutFQAN = defaultAcceptProxyWithoutFQAN;
     
@@ -111,10 +99,7 @@ public class VOMSUserGroup extends UserGroup {
     }
     
     public List<GridUser> getMemberList() {
-		if (getVoDB()!=null)
-			return getVoDB().retrieveMembers();
-		else
-			return new ArrayList<GridUser>();
+        return new ArrayList<GridUser>();
     }
     
     public String getRemainderUrl() {
@@ -132,10 +117,6 @@ public class VOMSUserGroup extends UserGroup {
 			return "";
     }
     
-    /**
-     * Get name of VomsServer
-     * @return
-     */
     public String getVomsServer() {
     	return vomsServer;
     }
@@ -147,36 +128,6 @@ public class VOMSUserGroup extends UserGroup {
     public String getVoGroup() {
         return this.voGroup;
     }
-    
-    
-    
-    public VOMSAdmin getVOMSAdmin() {
-        try {
-            log.trace("VOMS Service Locator: url='" + getUrl() + "/services/VOMSAdmin'");
-//            System.setProperty("axis.socketSecureManager", "org.glite.security.trustmanager.axis.AXISSocketManager");
-            VOMSAdminServiceLocator locator = new VOMSAdminServiceLocator();
-            URL vomsUrl = new URL( getUrl() + "/services/VOMSAdmin" );
-            log.info("Connecting to VOMS admin at " + vomsUrl);
-            return locator.getVOMSAdmin(vomsUrl);
-        } catch (Throwable e) {
-            log.error("Couldn't get VOMS Admin: ", e);
-            throw new RuntimeException("Couldn't get VOMS Admin: " + e.getMessage(), e);
-        }
-    }    
-    
-    public VOMSCompatibility getVOMSCompatibility() {
-        try {
-            log.trace("VOMS Service Locator: url='" + getUrl() + "/services/VOMSAdmin'");
-            VOMSCompatibilityServiceLocator locator = new VOMSCompatibilityServiceLocator();
-            URL vomsUrl = new URL( getUrl() + "/services/VOMSCompatibility" );
-            log.info("Connecting to VOMS Compatibility at " + vomsUrl);
-            return locator.getVOMSCompatibility(vomsUrl);
-        } catch (Throwable e) {
-            log.error("Couldn't get VOMS Compatiblity interface: ", e);
-            throw new RuntimeException("Couldn't get VOMS Compatibility interface: " + e.getMessage(), e);
-        }    	
-    }
-    
     
     
     /**
@@ -193,7 +144,7 @@ public class VOMSUserGroup extends UserGroup {
      * @return True if group will accept non-VOMS proxies
      */
     public boolean isAcceptProxyWithoutFQAN() {
-        return this.acceptProxyWithoutFQAN;
+        return false;
     }
     
     /**
@@ -213,19 +164,13 @@ public class VOMSUserGroup extends UserGroup {
         }
 
     	if (user.getVoFQAN() == null) {
-            // If the user comes in without FQAN and we don't accept proxies without fqan,
-            // kick him out right away
-	        if (!isAcceptProxyWithoutFQAN())
-	            return false;
-	        // If the user comes in without FQAN and we accept proxies without it,
-	        // we simply check whether the DN is in the database
-	        else {
-	        	if (getVoDB()!=null)
-	        		return getVoDB().isMemberInGroup(new GridUser(user.getCertificateDN(), fqan));
-	        	else
-	        		return false;
-	        }
+            // We no longer allow VOMS-based lookups without a VOMS proxy.
+	    return false;
     	}
+        if (!user.getVerified()) {
+            log.error("User's FQAN " + user.getVoFQAN() + " was not verified by remote callout; denying access.");
+            return false;
+        }
 
         // We now know we don't have user.getVoFQAN()==null
 
@@ -261,22 +206,12 @@ public class VOMSUserGroup extends UserGroup {
             if (!user.getVoFQAN().getVo().equals(theFQAN.getVo()))
                 return false;
         }
-        
-        // FQAN matches, let's look up if the DN is in the db
-        // If not, he's kicked out
-		if ((getVoDB()!=null) && !user.getVerified())
-			return getVoDB().isMemberInGroup(new GridUser(user.getCertificateDN(), fqan));
-		else
-			return true;
+
     }
 
     @Override
     public boolean isDNInGroup(GridUser user) {
-        if (getVoDB() != null) {
-            return getVoDB().isDNInGroup(user);
-        } else {
-            return true;
-        }
+        return false;
     }
 
     /**
@@ -336,7 +271,7 @@ public class VOMSUserGroup extends UserGroup {
     }
 
     public String toString() {
-        return "VOMSGroup: remainderUrl='" + remainderUrl + "' - voGroup='" + getVoGroup() + "' - role='" + getRole() + "'";
+        return "VOMSGroup: voGroup='" + getVoGroup() + "' - role='" + getRole() + "'";
     }
     
     public String toString(String bgColor) {
@@ -349,10 +284,6 @@ public class VOMSUserGroup extends UserGroup {
 		"\t\t\taccess='"+accessTypes[accessIndex]+"'\n" +
 		"\t\t\tdescription='"+getDescription()+"'\n"+
         "\t\t\tvomsServer='"+vomsServer+"'\n";
-    	if (!remainderUrl.equals(""))
-    		retStr += "\t\t\tremainderUrl='"+remainderUrl+"'\n";
-   		retStr += "\t\t\tmatchFQAN='"+matchFQAN+"'\n";
-   		retStr += "\t\t\tacceptProxyWithoutFQAN='"+acceptProxyWithoutFQAN+"'\n"; 
     	if (!voGroup.equals(""))
         	retStr += "\t\t\tvoGroup='"+voGroup+"'\n";
     	if (!role.equals(""))
@@ -361,38 +292,6 @@ public class VOMSUserGroup extends UserGroup {
     		retStr = retStr.substring(0, retStr.length()-1);
     	retStr += "/>\n\n";
     	return retStr;
-    }
-
-    public void updateMembers() {
-		if (getVoDB()!=null)
-	   		getVoDB().loadUpdatedList(retrieveMembers());
-                else 
-                    throw new RuntimeException("Could not updateMembers for " + vomsServer + " getVoDB returned null");
-                // note, if for some reason getVoDB returns null, you SILENTLY
-                // fail to load the new updated list It is no longer silent.
-                // note - this ***SHOULD*** not happen.
-                //
-                // getVoDB returns null if 1) getVoObject() returns null, or if
-                // getVoDB does not return null, but getVoObject().getDB(getName())
-                // does.
-
-                // getVoObject checks to make sure that there is a configuration
-                // and if so, gets it and calls getVomsServer(vomsServer) on it.
-                // if there is no configuration, it crashes
-
-    }
-    
-    private UserGroupDB getVoDB() {
-		if (getVoObject()!=null)
-			return getVoObject().getDB( getName() );
-		else
-			return null;
-    }
-    
-    private VomsServer getVoObject() {
-    	if (getConfiguration()==null)
-    		throw new RuntimeException("Configuration has not yet been set for this class");
-    	return getConfiguration().getVomsServer(vomsServer);
     }
 
     private void prepareFQAN() {
@@ -404,85 +303,5 @@ public class VOMSUserGroup extends UserGroup {
             else
             	fqan = null;
         }
-    }
-    
-    /**
-    * Retrieves the list of members for this VOMSUserGroup
-    * 
-    */
-    private List retrieveMembers() {
-		if (getVoObject()==null)
-			return null;
-        Properties p = System.getProperties();
-        try {
-            setProperties();
-            log.debug("SSL properties read: " + 
-            "sslCertfile='" + System.getProperty("sslCertfile") +
-            "' sslKey='" + System.getProperty("sslKey") +
-            "' sslKeyPasswd set:" + (System.getProperty("sslKeyPasswd")!=null) +
-            " sslCAFiles='" + System.getProperty("sslCAFiles") + "'" ); 
-            System.setProperty("axis.socketSecureFactory", "org.glite.security.trustmanager.axis.AXISSocketFactory");
-                     
-            VOMSCompatibility vomscompat = getVOMSCompatibility();
-            
-        	String[] users = null;
-            String container = null;
-            
-        	if ((getVoGroup().equals("") && role.equals("") )) {
-        		container = null;
-            } else if (!getVoGroup().equals("") && role.equals("") ) {
-            	container = getVoGroup();
-            } else {
-            	container = getVoGroup() + "/Role=" + getRole();
-            	
-            }
-        	users = vomscompat.getGridmapUsers(container);        	
-    	
-            if (users.length > 0) {
-                log.info("Retrieved " + users.length + " users.");
-                log.info("First user is: '" + users[0] + "'");
-                log.info("Last user is: '" + users[users.length - 1 ] + "'");
-            } else {
-                log.info("Retrieved no users.");
-            }
-            System.setProperties(p);
-            List entries = new ArrayList();
-            Set<String> ci_users = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
-            for (String user : users) {
-                if (ci_users.add(user)) {
-                    GridUser gridUser = new GridUser(user, fqan);
-                    entries.add(gridUser);
-                } else {
-                    log.warn("Duplicate user retrieved from VOMS: '" + user + "'");
-                }
-            }
-            return entries;
-        } catch (Throwable e) {
-        	String message = "Couldn't retrieve users: ";
-            log.error(message, e);
-            throw new RuntimeException(message + e.getMessage(), e);
-        }
-    }
-        
-    
-    
-    
-    private void setProperties() {
-    	VomsServer voObject = getVoObject();
-    	if (voObject!=null) {
-        	log.debug( "SSL properties set: sslCertfile='" + voObject.getSslCertfile() + "' sslKey='" + voObject.getSslKey() + "' sslKeyPasswd set:" + (!voObject.getSslKeyPasswd().equals("")) + " sslCAFiles='" + voObject.getSslCAFiles() + "'" ); 
-	    	if (!voObject.getSslCertfile().equals("")) {
-	    		System.setProperty("sslCertfile", voObject.getSslCertfile());
-	    	}
-	    	if (!voObject.getSslKey().equals("")) {
-	    		System.setProperty("sslKey", voObject.getSslKey());
-	    	}
-	    	if (!voObject.getSslKeyPasswd().equals("")) {
-	       		System.setProperty("sslKeyPasswd", voObject.getSslKeyPasswd());
-	    	}
-	    	if (!voObject.getSslCAFiles().equals("")) {
-	    		System.setProperty("sslCAFiles", voObject.getSslCAFiles());
-	    	}
-    	}
     }
 }
