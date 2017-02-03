@@ -97,18 +97,6 @@
                     <subPackageByFileName>true</subPackageByFileName>                     
                     <mappings>
                         <mapping>
-                            <namespace>http://glite.org/wsdl/services/org.glite.security.voms</namespace>
-                            <targetPackage>org.glite.voms.generated</targetPackage>
-                        </mapping>
-                        <mapping>
-                            <namespace>http://glite.org/wsdl/services/org.glite.security.voms.service.admin</namespace>
-                            <targetPackage>org.glite.voms.generated</targetPackage>
-                        </mapping>
-                        <mapping>
-                            <namespace>http://glite.org/wsdl/services/org.glite.security.voms.service.compatibility</namespace>
-                            <targetPackage>org.glite.voms.generated</targetPackage>
-                        </mapping>
-                        <mapping>
                             <namespace>http://org.glite.authz/wsdl/pap/services/xacml_policy_management</namespace>
                             <targetPackage>org.glite.pap.generated</targetPackage>
                         </mapping>
@@ -164,84 +152,6 @@
                     </dependencies>
                 </plugin>
     
-                <!-- 
-                <plugin>
-                    <artifactId>maven-antrun-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <id>1</id>
-                            <phase>generate-sources</phase>
-                            <configuration>
-                                <tasks>
-                                    <mkdir dir="target/temp" />
-                                    <copy filtering="on" todir="target/temp">
-                                        <fileset includes="*.jar" dir="${user.home}/.m2/repository/org/apache/axis/axis-ant/1.4" />
-                                        <fileset includes="*.jar" dir="${user.home}/.m2/repository/axis/axis/1.4" />
-                                        <fileset includes="*.jar" dir="${user.home}/.m2/repository/org/apache/axis/axis-saaj/1.4" />
-                                        <fileset includes="*.jar" dir="${user.home}/.m2/repository/org/apache/axis/axis-jaxrpc/1.4" />
-                                        <fileset includes="*.jar" dir="${user.home}/.m2/repository/axis/axis-wsdl4j/1.5.1" />
-                                        <fileset includes="*.jar" dir="${user.home}/.m2/repository/commons-discovery/commons-discovery/0.2" />
-                                        <fileset includes="*.jar" dir="${user.home}/.m2/repository/commons-logging/commons-logging/1.0.4" />
-                                    </copy>
-                                    <ant antfile="wsdl2java.xml" target="createClientStub" inheritRefs="true" />
-                                    <delete dir="target/temp" />
-                                    <copy todir="src/test/config">
-                                        <fileset includes="gums.config.schema" dir="src/main/config/" />
-                                        <fileset includes="gums.config.transform" dir="src/main/config/" />
-                                    </copy>
-                                </tasks>
-                            </configuration>
-                            <goals>
-                                <goal>run</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                    <dependencies>
-                      <dependency>
-			              <groupId>javax.mail</groupId>
-			             <artifactId>mail</artifactId>
-			             <version>1.4.1</version>
-			             <scope>runtime</scope>
-		              </dependency>
-                      <dependency>
-                        <groupId>axis</groupId>
-                        <artifactId>axis</artifactId>
-                        <version>1.4</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.axis</groupId>
-                        <artifactId>axis-jaxrpc</artifactId>
-                        <version>1.4</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.axis</groupId>
-                        <artifactId>axis-saaj</artifactId>
-                        <version>1.4</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>axis</groupId>
-                        <artifactId>axis-wsdl4j</artifactId>
-                        <version>1.5.1</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.axis</groupId>
-                        <artifactId>axis-ant</artifactId>
-                        <version>1.4</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>commons-discovery</groupId>
-                        <artifactId>commons-discovery</artifactId>
-                        <version>0.2</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                        <version>1.0.4</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-            -->
-            
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -298,11 +208,6 @@
             <groupId>commons-digester</groupId>
             <artifactId>commons-digester</artifactId>
             <version>1.8</version>
-        </dependency>
-        <dependency>
-            <groupId>emi</groupId>  
-            <artifactId>emi-trustmanager</artifactId>
-            <version>3.0.3</version>
         </dependency>
         
         <dependency>

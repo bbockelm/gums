@@ -12,6 +12,8 @@ import gov.bnl.gums.configuration.Configuration;
 import gov.bnl.gums.db.UserGroupDB;
 
 import java.net.URL;
+import java.util.List;
+import java.util.ArrayList;
 
 import org.apache.log4j.Logger; 
 import org.apache.log4j.Level;
@@ -40,14 +42,16 @@ public class VOMSUserGroup extends UserGroup {
 		return "voms";
 	}
     
-    static public List getMatchFQANTypes() {
-		ArrayList retList = new ArrayList();
-		for(int i=0; i<matchFQANTypes.length; i++)
-			retList.add(matchFQANTypes[i]);
-		return retList;
-	}
+    static public List<String> getMatchFQANTypes() {
+        ArrayList<String> retList = new ArrayList<String>(matchFQANTypes.length);
+        for (String item : matchFQANTypes) {
+            retList.add(item);
+        }
+        return retList;
+    }
 
     private Logger log = Logger.getLogger(VOMSUserGroup.class);
+    private String vomsServer = "";
     private String voGroup = "";
     private String role = "";
     private String fqan = null;
@@ -75,7 +79,6 @@ public class VOMSUserGroup extends UserGroup {
     	userGroup.setRole(new String(getRole()));
     	userGroup.setVoGroup(new String(getVoGroup()));
     	userGroup.setMatchFQAN(new String(getMatchFQAN()));
-    	userGroup.setRemainderUrl(new String(getRemainderUrl()));
     	userGroup.setAcceptProxyWithoutFQAN(acceptProxyWithoutFQAN);
     	return userGroup;
     }
@@ -102,20 +105,9 @@ public class VOMSUserGroup extends UserGroup {
         return new ArrayList<GridUser>();
     }
     
-    public String getRemainderUrl() {
-    	return remainderUrl;
-    }
-    
     public String getType() {
 		return "voms";
 	}
-    
-    public String getUrl() {
-		if (getVoObject()!=null)
-			return getVoObject().getBaseUrl() + remainderUrl;
-		else
-			return "";
-    }
     
     public String getVomsServer() {
     	return vomsServer;
@@ -206,7 +198,7 @@ public class VOMSUserGroup extends UserGroup {
             if (!user.getVoFQAN().getVo().equals(theFQAN.getVo()))
                 return false;
         }
-
+        return true;
     }
 
     @Override
@@ -240,10 +232,6 @@ public class VOMSUserGroup extends UserGroup {
         this.matchFQAN = matchFQAN;
     }
     
-    public void setRemainderUrl(String remainderUrl) {
-    	this.remainderUrl = remainderUrl;
-    }
-
     /**
      * Set name of VOMS Server
      * @param vo
@@ -269,6 +257,9 @@ public class VOMSUserGroup extends UserGroup {
         this.role = role;
         prepareFQAN();
     }
+
+    @Override
+    public void updateMembers() {}
 
     public String toString() {
         return "VOMSGroup: voGroup='" + getVoGroup() + "' - role='" + getRole() + "'";

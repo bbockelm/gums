@@ -236,8 +236,6 @@ public class ConfigurationWebToolkit implements Remote {
 				((VOMSUserGroup)userGroup).setVomsServer( request.getParameter("vOrg").trim() );
 			else if(request.getParameter("baseUrl")!=null && !request.getParameter("baseUrl").equals(""))
 				((VOMSUserGroup)userGroup).setVomsServer( request.getParameter("name").trim() );
-			if (request.getParameter("url")!=null)
-				((VOMSUserGroup)userGroup).setRemainderUrl( request.getParameter("url").trim() );
 			if (request.getParameter("nVOMS")!=null)
 				((VOMSUserGroup)userGroup).setAcceptProxyWithoutFQAN( request.getParameter("nVOMS").trim().equals("true") );
 			if (request.getParameter("matchFQAN")!=null)
